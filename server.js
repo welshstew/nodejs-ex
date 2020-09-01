@@ -25,7 +25,9 @@ if (mongoURL == null) {
     mongoDatabase = process.env['MONGODB_DATABASE'];
     mongoPassword = process.env['MONGODB_PASSWORD'];
     mongoUser = process.env['MONGODB_USER'];
-
+    console.log('mongoHost: ' + mongoHost);
+    console.log('mongoPort: ' + mongoPort);
+      
   // If using env vars from secret from service binding  
   } else if (process.env.database_name) {
     console.log('configuring from service binding');
@@ -50,6 +52,8 @@ if (mongoURL == null) {
     // Provide UI label that excludes user id and pw
     mongoURLLabel += mongoHost + ':' + mongoPort + '/' + mongoDatabase;
     mongoURL += mongoHost + ':' +  mongoPort + '/' + mongoDatabase;
+      
+    console.log('mongoURL: ' + mongoURL);
   }
 }
 var db = null,
