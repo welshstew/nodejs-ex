@@ -18,7 +18,7 @@ if (mongoURL == null) {
   // If using plane old env vars via service discovery
   if (process.env.DATABASE_SERVICE_NAME) {
     console.log('configuring from DATABASE_SERVICE_NAME');
-    var mongoServiceName = process.env.DATABASE_SERVICE_NAME.replace('-','_').toUpperCase();
+    var mongoServiceName = process.env.DATABASE_SERVICE_NAME.replace(/-/g,'_').toUpperCase();
     console.log('mongoServiceName: ' + mongoServiceName);
     mongoHost = process.env[mongoServiceName + '_SERVICE_HOST'];
     mongoPort = process.env[mongoServiceName + '_SERVICE_PORT'];
