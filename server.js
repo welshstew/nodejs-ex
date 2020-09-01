@@ -17,6 +17,7 @@ if (mongoURL == null) {
   var mongoHost, mongoPort, mongoDatabase, mongoPassword, mongoUser;
   // If using plane old env vars via service discovery
   if (process.env.DATABASE_SERVICE_NAME) {
+    console.log('configuring from DATABASE_SERVICE_NAME');
     var mongoServiceName = process.env.DATABASE_SERVICE_NAME.toUpperCase();
     mongoServiceName = mongoServiceName.replace('-','_');
     mongoHost = process.env[mongoServiceName + '_SERVICE_HOST'];
@@ -27,6 +28,7 @@ if (mongoURL == null) {
 
   // If using env vars from secret from service binding  
   } else if (process.env.database_name) {
+    console.log('configuring from service binding');
     mongoDatabase = process.env.database_name;
     mongoPassword = process.env.password;
     mongoUser = process.env.username;
