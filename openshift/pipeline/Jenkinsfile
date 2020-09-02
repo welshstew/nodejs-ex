@@ -1,6 +1,22 @@
 node('nodejs') {
-  stage 'build'
-  openshiftBuild(buildConfig: 'nodejs-ex', showBuildLogs: 'true')
-  stage 'deploy'
-  openshiftDeploy(deploymentConfig: 'nodejs-ex')
+    stage('build') {
+        script {
+            openshift.withCluster() {
+                openshift.withProject() {
+                    openshift.startBuild("nodejs-ex").logs("-f")
+                }
+            }
+        }
+    }
+
+    stage('deploy') {
+        script {
+            openshift.withCluster() {
+                openshift.withProject() {
+                    def rm = openshift.selector("dc", "nodejs-ex").rollout()
+                }
+            }
+        }
+    }
+
 }
