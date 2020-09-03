@@ -1,6 +1,6 @@
 openshift.withCluster() {
   env.NAMESPACE = openshift.project()
-  env.SKOPEO_IMAGE = openshift.selector( 'is/jenkins-slave-image-mgmt' ).object().status.dockerImageRepository
+  env.SKOPEO_IMAGE = openshift.selector( 'is/jenkins-agent-image-mgmt' ).object().status.dockerImageRepository
   env.APP_NAME = "${env.JOB_NAME}".replaceAll(/-?pipeline-?/, '').replaceAll(/-?${env.NAMESPACE}-?/, '')
   echo "Starting Pipeline for ${APP_NAME}..."
 }
