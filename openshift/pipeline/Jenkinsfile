@@ -49,7 +49,7 @@ pipeline {
         stage('Promote to Quay') {
         agent {
             node {
-                label 'jenkins-slave-image-mgmt'
+                label 'jenkins-agent-image-mgmt'
             }
         }
         steps {
