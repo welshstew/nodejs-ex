@@ -41,21 +41,11 @@ stages {
       }
     }
 
-    stage('Promote to Prod') {
+    stage('Promote to Quay') {
       agent {
-        kubernetes {
-          label 'promotion-slave'
-          cloud 'openshift'
-          serviceAccount 'jenkins'
-          containerTemplate {
-            name 'jnlp'
-            image "docker-registry.default.svc:5000/${NAMESPACE}/jenkins-slave-image-mgmt"
-            alwaysPullImage true
-            workingDir '/tmp'
-            args '${computer.jnlpmac} ${computer.name}'
-            ttyEnabled false
-          }
-        }
+         node {
+             label 'jenkins-slave-image-mgmt'
+         }
       }
       steps {
         script {
@@ -70,6 +60,7 @@ stages {
             def token = sh(script:"set +x; echo ${encodedToken} | base64 --decode", returnStdout: true)
 
             openshift.withProject() {
+              echo '🐦 Copying image to Quaaaaay...'
               def imageRegistry = openshift.selector( 'is', "nodejs-ex").object().status.dockerImageRepository
               echo "Promoting ${imageRegistry} -> quay.io/swinches/nodejs-mongo-persistent"
               sh """
