@@ -54,34 +54,31 @@ pipeline {
         }
         steps {
             script {
-            openshift.withCluster() {
+                openshift.withCluster() {
+                    def localToken = readFile('/var/run/secrets/kubernetes.io/serviceaccount/token').trim()
 
-                def localToken = readFile('/var/run/secrets/kubernetes.io/serviceaccount/token').trim()
+                    def secretData = openshift.selector('secret/prod-credentials').object().data
+                    // def encodedRegistry = secretData.registry
+                    def encodedUsername = secretData.username
+                    def encodedToken = secretData.token
+                    def username = sh(script:"set +x; echo ${encodedUsername} | base64 --decode", returnStdout: true)
+                    def token = sh(script:"set +x; echo ${encodedToken} | base64 --decode", returnStdout: true)
 
-                def secretData = openshift.selector('secret/prod-credentials').object().data
-                // def encodedRegistry = secretData.registry
-                def encodedUsername = secretData.username
-                def encodedToken = secretData.token
-                def username = sh(script:"set +x; echo ${encodedUsername} | base64 --decode", returnStdout: true)
-                def token = sh(script:"set +x; echo ${encodedToken} | base64 --decode", returnStdout: true)
-
-                openshift.withProject() {
-                echo '🐦 Copying image to Quaaaaay...'
-                def imageRegistry = openshift.selector( 'is', "nodejs-ex").object().status.dockerImageRepository
-                echo "Promoting ${imageRegistry} -> quay.io/swinches/nodejs-mongo-persistent"
-                sh """
-                set +x
-                skopeo copy --remove-signatures \
-                    --src-creds openshift:${localToken} --src-cert-dir=/run/secrets/kubernetes.io/serviceaccount/ \
-                    --dest-creds ${username}:${token} docker://${imageRegistry} docker://quay.io/swinches/nodejs-mongo-persistent:latest
-                """
-                
-
+                    openshift.withProject() {
+                        echo '🐦 Copying image to Quaaaaay...'
+                        def imageRegistry = openshift.selector( 'is', "nodejs-ex").object().status.dockerImageRepository
+                        echo "Promoting ${imageRegistry} -> quay.io/swinches/nodejs-mongo-persistent"
+                        sh """
+                        set +x
+                        skopeo copy --remove-signatures \
+                            --src-creds openshift:${localToken} --src-cert-dir=/run/secrets/kubernetes.io/serviceaccount/ \
+                            --dest-creds ${username}:${token}  --dest-tls-verify=false \
+                            docker://${imageRegistry} docker://quay.io/swinches/nodejs-mongo-persistent:latest
+                        """
+                    }
+                }
             }
-            }
-        }
         }
 
     }
-
 }
