@@ -26,49 +26,47 @@ node('nodejs') {
         }
     }
 
-    // stage('Promote to Prod') {
-    //   agent {
-    //     kubernetes {
-    //       label 'promotion-slave'
-    //       cloud 'openshift'
-    //       serviceAccount 'jenkins'
-    //       containerTemplate {
-    //         name 'jnlp'
-    //         image "docker-registry.default.svc:5000/${NAMESPACE}/jenkins-slave-image-mgmt"
-    //         alwaysPullImage true
-    //         workingDir '/tmp'
-    //         args '${computer.jnlpmac} ${computer.name}'
-    //         ttyEnabled false
-    //       }
-    //     }
-    //   }
-    //   steps {
-    //     script {
-    //       openshift.withCluster() {
+    stage('Promote to Prod') {
+      agent {
+        kubernetes {
+          label 'promotion-slave'
+          cloud 'openshift'
+          serviceAccount 'jenkins'
+          containerTemplate {
+            name 'jnlp'
+            image "docker-registry.default.svc:5000/${NAMESPACE}/jenkins-slave-image-mgmt"
+            alwaysPullImage true
+            workingDir '/tmp'
+            args '${computer.jnlpmac} ${computer.name}'
+            ttyEnabled false
+          }
+        }
+      }
+        script {
+            openshift.withCluster() {
 
-    //         def localToken = readFile('/var/run/secrets/kubernetes.io/serviceaccount/token').trim()
+            def localToken = readFile('/var/run/secrets/kubernetes.io/serviceaccount/token').trim()
 
-    //         def secretData = openshift.selector('secret/prod-credentials').object().data
-    //         // def encodedRegistry = secretData.registry
-    //         def encodedToken = secretData.token
-    //         // def registry = sh(script:"set +x; echo ${encodedRegistry} | base64 --decode", returnStdout: true)
-    //         def token = sh(script:"set +x; echo ${encodedToken} | base64 --decode", returnStdout: true)
+            def secretData = openshift.selector('secret/prod-credentials').object().data
+            // def encodedRegistry = secretData.registry
+            def encodedToken = secretData.token
+            // def registry = sh(script:"set +x; echo ${encodedRegistry} | base64 --decode", returnStdout: true)
+            def token = sh(script:"set +x; echo ${encodedToken} | base64 --decode", returnStdout: true)
 
-    //         openshift.withProject() {
-    //           def imageRegistry = openshift.selector( 'is', "nodejs-ex").object().status.dockerImageRepository
-    //           echo "Promoting ${imageRegistry} -> quay.io/swinches/nodejs-mongo-persistent"
-    //           sh """
-    //           set +x
-    //           skopeo copy --remove-signatures \
-    //             --src-creds openshift:${localToken} --src-cert-dir=/run/secrets/kubernetes.io/serviceaccount/ \
-    //             --dest-creds openshift:${token}  --dest-tls-verify=false \
-    //             docker://${imageRegistry} docker://quay.io/swinches/nodejs-mongo-persistent:latest
-    //           """
-    //         }
+            openshift.withProject() {
+                def imageRegistry = openshift.selector( 'is', "nodejs-ex").object().status.dockerImageRepository
+                echo "Promoting ${imageRegistry} -> quay.io/swinches/nodejs-mongo-persistent"
+                sh """
+                set +x
+                skopeo copy --remove-signatures \
+                --src-creds openshift:${localToken} --src-cert-dir=/run/secrets/kubernetes.io/serviceaccount/ \
+                --dest-creds openshift:${token}  --dest-tls-verify=false \
+                docker://${imageRegistry} docker://quay.io/swinches/nodejs-mongo-persistent:latest
+                """
+            }
 
-    //       }
-    //     }
-    //   }
-    // }
+            }
+        }
+    }
 
 }
