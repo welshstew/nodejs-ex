@@ -73,12 +73,11 @@ pipeline {
 
                                         string(defaultValue: '1.0',
                                                 description: 'Image tag you want',
-                                                name: 'Tag'),
-
+                                                name: 'tagInput'),
                                 ])
 
                         // Save to variables. Default to latest if not found.
-                        inputTag = userInput.Tag?:'latest'
+                        inputTag = userInput?:'latest'
 
                         openshift.withProject() {
                             echo '🐦 Copying image to Quaaaaay...'
