@@ -11,7 +11,6 @@ pipeline {
         label 'nodejs'
     }
 
-
     stages {
 
         stage('build') {
@@ -64,6 +63,23 @@ pipeline {
                         def username = sh(script:"set +x; echo ${encodedUsername} | base64 --decode", returnStdout: true)
                         def token = sh(script:"set +x; echo ${encodedToken} | base64 --decode", returnStdout: true)
 
+                        // Variables for input
+                        def inputTag
+
+                        // Get the input
+                        def userInput = input(
+                                id: 'userInput', message: 'Enter image tag:?',
+                                parameters: [
+
+                                        string(defaultValue: '1.0',
+                                                description: 'Image tag you want',
+                                                name: 'Tag'),
+
+                                ])
+
+                        // Save to variables. Default to latest if not found.
+                        inputTag = userInput.Tag?:'latest'
+
                         openshift.withProject() {
                             echo '🐦 Copying image to Quaaaaay...'
                             def imageRegistry = openshift.selector( 'is', "nodejs-ex").object().status.dockerImageRepository
@@ -73,7 +89,7 @@ pipeline {
                             skopeo copy --remove-signatures \
                                 --src-creds openshift:${localToken} --src-cert-dir=/run/secrets/kubernetes.io/serviceaccount/ \
                                 --dest-creds ${username}:${token}  --dest-tls-verify=false \
-                                docker://${imageRegistry} docker://quay.io/swinches/nodejs-mongo-persistent:latest
+                                docker://${imageRegistry} docker://quay.io/swinches/nodejs-mongo-persistent:${inputTag}
                             """
                         }
                     }
