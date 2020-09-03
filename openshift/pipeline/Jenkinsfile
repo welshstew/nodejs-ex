@@ -41,7 +41,7 @@ pipeline {
         stage('Promotion gate') {
         steps {
             script {
-            input message: 'Promote application to Production?'
+            input message: 'Promote application to Quay?'
             }
         }
         }
@@ -60,8 +60,9 @@ pipeline {
 
                 def secretData = openshift.selector('secret/prod-credentials').object().data
                 // def encodedRegistry = secretData.registry
+                def encodedUsername = secretData.username
                 def encodedToken = secretData.token
-                // def registry = sh(script:"set +x; echo ${encodedRegistry} | base64 --decode", returnStdout: true)
+                def username = sh(script:"set +x; echo ${encodedUsername} | base64 --decode", returnStdout: true)
                 def token = sh(script:"set +x; echo ${encodedToken} | base64 --decode", returnStdout: true)
 
                 openshift.withProject() {
@@ -72,10 +73,9 @@ pipeline {
                 set +x
                 skopeo copy --remove-signatures \
                     --src-creds openshift:${localToken} --src-cert-dir=/run/secrets/kubernetes.io/serviceaccount/ \
-                    --dest-creds openshift:${token}  --dest-tls-verify=false \
-                    docker://${imageRegistry} docker://quay.io/swinches/nodejs-mongo-persistent:latest
+                    --dest-creds ${username}:${token} docker://${imageRegistry} docker://quay.io/swinches/nodejs-mongo-persistent:latest
                 """
-                }
+                
 
             }
             }
