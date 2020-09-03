@@ -5,76 +5,83 @@ openshift.withCluster() {
   echo "Starting Pipeline for ${APP_NAME}..."
 }
 
-agent { label 'nodejs' }
+pipeline {
 
-stages {
+    agent {
+        label 'nodejs'
+    }
 
-    stage('build') {
-        steps {
-            script {
-                openshift.withCluster() {
-                    openshift.withProject() {
-                        openshift.startBuild("nodejs-ex").logs("-f")
+
+    stages {
+
+        stage('build') {
+            steps {
+                script {
+                    openshift.withCluster() {
+                        openshift.withProject() {
+                            openshift.startBuild("nodejs-ex").logs("-f")
+                        }
                     }
                 }
             }
         }
-    }
 
-    stage('deploy') {
-        steps {
-            script {
-                openshift.withCluster() {
-                    openshift.withProject() {
-                        def rm = openshift.selector("dc", "nodejs-ex").rollout()
+        stage('deploy') {
+            steps {
+                script {
+                    openshift.withCluster() {
+                        openshift.withProject() {
+                            def rm = openshift.selector("dc", "nodejs-ex").rollout()
+                        }
                     }
                 }
             }
         }
-    }
 
-    stage('Promotion gate') {
-      steps {
-        script {
-          input message: 'Promote application to Production?'
-        }
-      }
-    }
-
-    stage('Promote to Quay') {
-      agent {
-         node {
-             label 'jenkins-slave-image-mgmt'
-         }
-      }
-      steps {
-        script {
-          openshift.withCluster() {
-
-            def localToken = readFile('/var/run/secrets/kubernetes.io/serviceaccount/token').trim()
-
-            def secretData = openshift.selector('secret/prod-credentials').object().data
-            // def encodedRegistry = secretData.registry
-            def encodedToken = secretData.token
-            // def registry = sh(script:"set +x; echo ${encodedRegistry} | base64 --decode", returnStdout: true)
-            def token = sh(script:"set +x; echo ${encodedToken} | base64 --decode", returnStdout: true)
-
-            openshift.withProject() {
-              echo '🐦 Copying image to Quaaaaay...'
-              def imageRegistry = openshift.selector( 'is', "nodejs-ex").object().status.dockerImageRepository
-              echo "Promoting ${imageRegistry} -> quay.io/swinches/nodejs-mongo-persistent"
-              sh """
-              set +x
-              skopeo copy --remove-signatures \
-                --src-creds openshift:${localToken} --src-cert-dir=/run/secrets/kubernetes.io/serviceaccount/ \
-                --dest-creds openshift:${token}  --dest-tls-verify=false \
-                docker://${imageRegistry} docker://quay.io/swinches/nodejs-mongo-persistent:latest
-              """
+        stage('Promotion gate') {
+        steps {
+            script {
+            input message: 'Promote application to Production?'
             }
-
-          }
         }
-      }
+        }
+
+        stage('Promote to Quay') {
+        agent {
+            node {
+                label 'jenkins-slave-image-mgmt'
+            }
+        }
+        steps {
+            script {
+            openshift.withCluster() {
+
+                def localToken = readFile('/var/run/secrets/kubernetes.io/serviceaccount/token').trim()
+
+                def secretData = openshift.selector('secret/prod-credentials').object().data
+                // def encodedRegistry = secretData.registry
+                def encodedToken = secretData.token
+                // def registry = sh(script:"set +x; echo ${encodedRegistry} | base64 --decode", returnStdout: true)
+                def token = sh(script:"set +x; echo ${encodedToken} | base64 --decode", returnStdout: true)
+
+                openshift.withProject() {
+                echo '🐦 Copying image to Quaaaaay...'
+                def imageRegistry = openshift.selector( 'is', "nodejs-ex").object().status.dockerImageRepository
+                echo "Promoting ${imageRegistry} -> quay.io/swinches/nodejs-mongo-persistent"
+                sh """
+                set +x
+                skopeo copy --remove-signatures \
+                    --src-creds openshift:${localToken} --src-cert-dir=/run/secrets/kubernetes.io/serviceaccount/ \
+                    --dest-creds openshift:${token}  --dest-tls-verify=false \
+                    docker://${imageRegistry} docker://quay.io/swinches/nodejs-mongo-persistent:latest
+                """
+                }
+
+            }
+            }
+        }
+        }
+
     }
 
 }
